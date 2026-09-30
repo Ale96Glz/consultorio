@@ -39,7 +39,12 @@ docs/user-stories Historias de usuario
 
 ## Estado
 
-El repositorio fija la arquitectura y las convenciones de desarrollo. Las aplicaciones de `apps/api` y `apps/web` se generan a partir de esta base.
+La API Nest está en `apps/api` y la aplicación Angular en `apps/web`. Las dos arrancan con el proyecto inicial de cada CLI. Los contextos, la sesión y las pantallas de la clínica se agregan en pasos siguientes.
+
+```powershell
+cd apps/web
+npm start
+```
 
 ## Privacidad
 
