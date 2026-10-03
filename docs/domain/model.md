@@ -2,7 +2,7 @@
 
 Decisiones de estructura, agregados y relaciones para implementar Identity, Clinical y Scheduling sin reinterpretar el [lenguaje ubicuo](ubiquitous-language.md). Billing no entra. El diagrama está en [docs/diagrams/er-dominio.mmd](../diagrams/er-dominio.mmd).
 
-Hay una sola base Postgres. Los contextos son módulos de Nest, no bases separadas. Prisma tendrá un schema, con los modelos agrupados por contexto. Un contexto puede guardar el id de una entidad de otro; no copia sus datos.
+Hay una sola base Postgres. Los contextos son módulos de Nest, no bases separadas. El schema está en `apps/api/prisma/schema.prisma`, con los modelos agrupados por contexto. Un contexto puede guardar el id de una entidad de otro; no copia sus datos.
 
 ## Estructura de la API
 
@@ -37,7 +37,7 @@ Miembro de la clínica. Una fila por User de Better Auth (`userId` único).
 
 | Columna | Notas |
 | --- | --- |
-| userId | Id del User de Better Auth. Identity no duplica la contraseña ni la Session |
+| userId | Id del User de Better Auth. En este schema todavía no hay llave foránea: la tabla User la crea Better Auth. Identity no duplica la contraseña ni la Session |
 | role | `doctor`, `receptionist` o `admin`. Un solo valor |
 
 Scheduling y Clinical referencian `staffId`. No guardan `userId`.

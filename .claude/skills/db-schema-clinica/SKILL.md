@@ -4,7 +4,7 @@ description: Modelo de datos de la clínica — pacientes, citas, expedientes, p
 user-invocable: false
 ---
 
-El detalle de agregados, columnas y relaciones está en docs/domain/model.md. Este skill no lo reemplaza.
+El detalle de agregados, columnas y relaciones está en docs/domain/model.md. El schema que lo implementa está en apps/api/prisma/schema.prisma. Este skill no lo reemplaza.
 
 ## Entidades principales
 - Patient: datos personales + historial (relación 1-N con MedicalRecord)

@@ -1,0 +1,133 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Identity. User y Session los crea Better Auth; Staff.userId se enlaza después.
+
+enum StaffRole {
+  doctor
+  receptionist
+  admin
+}
+
+model Staff {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @unique
+  role      StaffRole
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  assignments  Assignment[]
+  auditLogs    AuditLog[]
+  appointments Appointment[]
+}
+
+// Clinical
+
+model Patient {
+  id          String    @id @default(uuid()) @db.Uuid
+  givenNames  String
+  familyName  String
+  documentId  String
+  phone       String
+  birthDate   DateTime  @db.Date
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  assignments    Assignment[]
+  medicalRecords MedicalRecord[]
+  appointments   Appointment[]
+
+  @@unique([documentId], where: raw("\"deletedAt\" IS NULL"), map: "Patient_documentId_active_key")
+}
+
+model Assignment {
+  id        String   @id @default(uuid()) @db.Uuid
+  staffId   String   @db.Uuid
+  patientId String   @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  staff   Staff   @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@unique([staffId, patientId])
+}
+
+model MedicalRecord {
+  id         String    @id @default(uuid()) @db.Uuid
+  patientId  String    @db.Uuid
+  diagnosis  String
+  notes      String
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  patient     Patient      @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  attachments Attachment[]
+  auditLogs   AuditLog[]
+}
+
+enum AuditAction {
+  read
+  create
+  update
+}
+
+model Attachment {
+  id              String   @id @default(uuid()) @db.Uuid
+  medicalRecordId String   @db.Uuid
+  objectKey       String
+  fileName        String
+  contentType     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Restrict)
+}
+
+model AuditLog {
+  id              String      @id @default(uuid()) @db.Uuid
+  medicalRecordId String      @db.Uuid
+  staffId         String      @db.Uuid
+  action          AuditAction
+  at              DateTime
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Restrict)
+  staff         Staff         @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@index([medicalRecordId, at])
+}
+
+// Scheduling. El solapamiento lo protege el agregado, no un constraint de la base.
+
+enum AppointmentStatus {
+  pendiente
+  confirmada
+  cancelada
+}
+
+model Appointment {
+  id        String            @id @default(uuid()) @db.Uuid
+  patientId String            @db.Uuid
+  staffId   String            @db.Uuid
+  startsAt  DateTime
+  endsAt    DateTime
+  status    AppointmentStatus
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  staff   Staff   @relation(fields: [staffId], references: [id], onDelete: Restrict)
+
+  @@index([staffId, startsAt])
+}
