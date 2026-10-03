@@ -1,0 +1,69 @@
+erDiagram
+  User ||--|| Staff : "identifica"
+  Staff ||--o{ Assignment : "doctor"
+  Patient ||--o{ Assignment : "vincula"
+  Patient ||--o{ MedicalRecord : "historial"
+  MedicalRecord ||--o{ Attachment : "adjunta"
+  MedicalRecord ||--o{ AuditLog : "audita"
+  Staff ||--o{ AuditLog : "realiza"
+  Patient ||--o{ Appointment : "asiste"
+  Staff ||--o{ Appointment : "atiende"
+
+  User {
+    string id
+  }
+
+  Staff {
+    uuid id
+    string userId
+    string role
+  }
+
+  Patient {
+    uuid id
+    string givenNames
+    string familyName
+    string documentId
+    string phone
+    date birthDate
+    datetime deletedAt
+  }
+
+  Assignment {
+    uuid id
+    uuid staffId
+    uuid patientId
+  }
+
+  MedicalRecord {
+    uuid id
+    uuid patientId
+    string diagnosis
+    string notes
+    datetime deletedAt
+  }
+
+  Attachment {
+    uuid id
+    uuid medicalRecordId
+    string objectKey
+    string fileName
+    string contentType
+  }
+
+  AuditLog {
+    uuid id
+    uuid medicalRecordId
+    uuid staffId
+    string action
+    datetime at
+  }
+
+  Appointment {
+    uuid id
+    uuid patientId
+    uuid staffId
+    datetime startsAt
+    datetime endsAt
+    string status
+  }

@@ -22,7 +22,7 @@ La decisión y las alternativas descartadas están en [docs/adr/001-eleccion-sta
 
 Patient es la ficha clínica, no un rol de acceso. Un doctor solo ve expedientes de sus pacientes asignados; esa regla se comprueba en el caso de uso, además del guard de rol.
 
-El vocabulario del dominio está en [docs/domain/ubiquitous-language.md](docs/domain/ubiquitous-language.md).
+El vocabulario del dominio está en [docs/domain/ubiquitous-language.md](docs/domain/ubiquitous-language.md). Las entidades y sus relaciones están en [docs/domain/model.md](docs/domain/model.md).
 
 ## Estructura
 

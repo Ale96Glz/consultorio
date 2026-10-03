@@ -1,6 +1,6 @@
 # Lenguaje ubicuo
 
-Fuente de los nombres del dominio. El código, Prisma, los requisitos y las historias usan estos términos. Si aparece un sinónimo, se reemplaza por el término de aquí.
+Fuente de los nombres del dominio. El código, Prisma, los requisitos y las historias usan estos términos. Si aparece un sinónimo, se reemplaza por el término de aquí. Las relaciones y las columnas están en [model.md](model.md).
 
 El **nombre en código** va en módulos, tablas y eventos. El **nombre en el negocio** va en la interfaz y en las historias.
 
@@ -29,13 +29,13 @@ Sesión activa de un User. La emite Better Auth. Los guards de Nest la leen para
 
 ### Staff
 
-Miembro de la clínica ligado a un User. El rol dice qué puede hacer: doctor, receptionist o admin. Quien atiende una Appointment es un Staff con rol `doctor`.
+Miembro de la clínica ligado uno a uno con un User. Tiene un solo Role: `doctor`, `receptionist` o `admin`. Quien atiende una Appointment es un Staff con Role `doctor`. Clinical y Scheduling guardan `staffId`, no `userId`.
 
 ## Clinical
 
 ### Patient
 
-Ficha clínica de una persona atendida en la clínica. Guarda datos de identificación (nombre, DocumentId, teléfono, fecha de nacimiento) y su historial. Se identifica con un UUID. La baja es lógica (`deletedAt`): la ficha no se borra en físico.
+Ficha clínica de una persona atendida en la clínica. Guarda nombres (`givenNames`), apellidos (`familyName`), DocumentId, teléfono y fecha de nacimiento, además de su historial. Se identifica con un UUID. La baja es lógica (`deletedAt`): la ficha no se borra en físico.
 
 Patient no es un Role y no inicia sesión. Un portal para el paciente queda fuera de este vocabulario hasta un ADR.
 
@@ -69,13 +69,13 @@ Registro de un acceso a un MedicalRecord: quién, cuándo y qué acción. No gua
 
 ### Appointment
 
-Cita de un Patient con un Staff de rol `doctor`, en un DateRange. Es un agregado: protege que dos citas del mismo profesional no se solapen.
+Cita de un Patient con un Staff de rol `doctor`, en un DateRange. Es un agregado: protege que dos citas activas del mismo profesional no se solapen. Activas son `pendiente` y `confirmada`. Una `cancelada` no ocupa agenda.
 
 Estados: `pendiente`, `confirmada`, `cancelada`.
 
 ### DateRange
 
-Inicio y fin de una Appointment. No tiene identidad propia. Dos DateRange del mismo doctor se solapan cuando comparten algún instante.
+Inicio y fin de una Appointment (`startsAt` inclusive, `endsAt` exclusive). No tiene identidad propia. Dos DateRange del mismo doctor se solapan cuando comparten algún instante. Una cita que termina cuando otra empieza no se solapa.
 
 ## Eventos de dominio
 
