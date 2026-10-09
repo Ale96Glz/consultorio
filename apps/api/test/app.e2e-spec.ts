@@ -23,6 +23,10 @@ describe('Health (e2e)', () => {
       .expect({ status: 'ok' });
   });
 
+  it('GET /api/auth/ok', () => {
+    return request(app.getHttpServer()).get('/api/auth/ok').expect(200);
+  });
+
   afterEach(async () => {
     await app.close();
   });

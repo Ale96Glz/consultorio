@@ -37,7 +37,7 @@ Miembro de la clínica. Una fila por User de Better Auth (`userId` único).
 
 | Columna | Notas |
 | --- | --- |
-| userId | Id del User de Better Auth. En este schema todavía no hay llave foránea: la tabla User la crea Better Auth. Identity no duplica la contraseña ni la Session |
+| userId | Id del User de Better Auth. La tabla `user` ya existe en el schema; esta columna todavía no tiene llave foránea. Identity no duplica la contraseña ni la Session |
 | role | `doctor`, `receptionist` o `admin`. Un solo valor |
 
 Scheduling y Clinical referencian `staffId`. No guardan `userId`.
