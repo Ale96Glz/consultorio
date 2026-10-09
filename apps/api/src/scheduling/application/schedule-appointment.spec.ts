@@ -4,7 +4,9 @@ import type { PatientLookup, PatientSnapshot } from './patient-lookup';
 import {
   PatientUnavailableError,
   ScheduleAppointment,
+  StaffCannotAttendError,
 } from './schedule-appointment';
+import type { StaffLookup, StaffRole, StaffSnapshot } from './staff-lookup';
 
 const patientId = 'patient-1';
 const doctorId = 'staff-doctor-1';
@@ -18,6 +20,14 @@ class InMemoryPatients implements PatientLookup {
 
   async findById(id: string): Promise<PatientSnapshot | null> {
     return this.patients.find((patient) => patient.id === id) ?? null;
+  }
+}
+
+class InMemoryStaff implements StaffLookup {
+  constructor(private readonly staff: StaffSnapshot[]) {}
+
+  async findById(id: string): Promise<StaffSnapshot | null> {
+    return this.staff.find((member) => member.id === id) ?? null;
   }
 }
 
@@ -41,10 +51,12 @@ class InMemoryAppointments implements AppointmentRepository {
 function useCase(
   patients: PatientSnapshot[],
   existing: Appointment[] = [],
+  staff: StaffSnapshot[] = [{ id: doctorId, role: 'doctor' }],
 ): { schedule: ScheduleAppointment; appointments: InMemoryAppointments } {
   const appointments = new InMemoryAppointments(existing);
   const schedule = new ScheduleAppointment(
     new InMemoryPatients(patients),
+    new InMemoryStaff(staff),
     appointments,
   );
 
@@ -95,6 +107,41 @@ describe('ScheduleAppointment', () => {
         endsAt: at(16),
       }),
     ).rejects.toThrow(PatientUnavailableError);
+    expect(appointments.saved).toHaveLength(0);
+  });
+
+  it.each(['receptionist', 'admin'] as const)(
+    'no guarda la cita si quien atiende es %s',
+    async (role: StaffRole) => {
+      const { schedule, appointments } = useCase(
+        [activePatient],
+        [],
+        [{ id: doctorId, role }],
+      );
+
+      await expect(
+        schedule.execute({
+          patientId,
+          staffId: doctorId,
+          startsAt: at(15),
+          endsAt: at(16),
+        }),
+      ).rejects.toThrow(StaffCannotAttendError);
+      expect(appointments.saved).toHaveLength(0);
+    },
+  );
+
+  it('no guarda la cita si el profesional no existe', async () => {
+    const { schedule, appointments } = useCase([activePatient], [], []);
+
+    await expect(
+      schedule.execute({
+        patientId,
+        staffId: doctorId,
+        startsAt: at(15),
+        endsAt: at(16),
+      }),
+    ).rejects.toThrow(StaffCannotAttendError);
     expect(appointments.saved).toHaveLength(0);
   });
 
