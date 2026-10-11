@@ -5,6 +5,6 @@ export type StaffSnapshot = {
   role: StaffRole;
 };
 
-export interface StaffLookup {
-  findById(staffId: string): Promise<StaffSnapshot | null>;
+export abstract class StaffLookup {
+  abstract findById(staffId: string): Promise<StaffSnapshot | null>;
 }

@@ -1,6 +1,6 @@
 import type { Appointment } from '../domain/appointment';
 
-export interface AppointmentRepository {
-  findOccupyingByStaff(staffId: string): Promise<Appointment[]>;
-  save(appointment: Appointment): Promise<void>;
+export abstract class AppointmentRepository {
+  abstract findOccupyingByStaff(staffId: string): Promise<Appointment[]>;
+  abstract save(appointment: Appointment): Promise<void>;
 }

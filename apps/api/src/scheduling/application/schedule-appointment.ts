@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Appointment } from '../domain/appointment';
-import type { AppointmentRepository } from './appointment-repository';
-import type { PatientLookup } from './patient-lookup';
-import type { StaffLookup } from './staff-lookup';
+import { AppointmentRepository } from './appointment-repository';
+import { PatientLookup } from './patient-lookup';
+import { StaffLookup } from './staff-lookup';
 
 export class PatientUnavailableError extends Error {
   constructor() {

@@ -3,6 +3,6 @@ export type PatientSnapshot = {
   deletedAt: Date | null;
 };
 
-export interface PatientLookup {
-  findById(patientId: string): Promise<PatientSnapshot | null>;
+export abstract class PatientLookup {
+  abstract findById(patientId: string): Promise<PatientSnapshot | null>;
 }

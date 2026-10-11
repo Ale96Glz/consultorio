@@ -1,12 +1,12 @@
 import { Appointment, AppointmentOverlapError } from '../domain/appointment';
-import type { AppointmentRepository } from './appointment-repository';
-import type { PatientLookup, PatientSnapshot } from './patient-lookup';
+import { AppointmentRepository } from './appointment-repository';
+import { PatientLookup, type PatientSnapshot } from './patient-lookup';
 import {
   PatientUnavailableError,
   ScheduleAppointment,
   StaffCannotAttendError,
 } from './schedule-appointment';
-import type { StaffLookup, StaffRole, StaffSnapshot } from './staff-lookup';
+import { StaffLookup, type StaffRole, type StaffSnapshot } from './staff-lookup';
 
 const patientId = 'patient-1';
 const doctorId = 'staff-doctor-1';
@@ -15,26 +15,32 @@ function at(hour: number): Date {
   return new Date(Date.UTC(2026, 9, 8, hour));
 }
 
-class InMemoryPatients implements PatientLookup {
-  constructor(private readonly patients: PatientSnapshot[]) {}
+class InMemoryPatients extends PatientLookup {
+  constructor(private readonly patients: PatientSnapshot[]) {
+    super();
+  }
 
   async findById(id: string): Promise<PatientSnapshot | null> {
     return this.patients.find((patient) => patient.id === id) ?? null;
   }
 }
 
-class InMemoryStaff implements StaffLookup {
-  constructor(private readonly staff: StaffSnapshot[]) {}
+class InMemoryStaff extends StaffLookup {
+  constructor(private readonly staff: StaffSnapshot[]) {
+    super();
+  }
 
   async findById(id: string): Promise<StaffSnapshot | null> {
     return this.staff.find((member) => member.id === id) ?? null;
   }
 }
 
-class InMemoryAppointments implements AppointmentRepository {
+class InMemoryAppointments extends AppointmentRepository {
   readonly saved: Appointment[] = [];
 
-  constructor(private readonly existing: Appointment[] = []) {}
+  constructor(private readonly existing: Appointment[] = []) {
+    super();
+  }
 
   async findOccupyingByStaff(staffId: string): Promise<Appointment[]> {
     return this.existing.filter(

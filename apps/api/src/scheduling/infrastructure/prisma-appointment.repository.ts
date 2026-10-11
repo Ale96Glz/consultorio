@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/prisma.service';
-import type { AppointmentRepository } from '../application/appointment-repository';
+import { AppointmentRepository } from '../application/appointment-repository';
 import { Appointment } from '../domain/appointment';
 
 @Injectable()
-export class PrismaAppointmentRepository implements AppointmentRepository {
-  constructor(private readonly prisma: PrismaService) {}
+export class PrismaAppointmentRepository extends AppointmentRepository {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
 
   async findOccupyingByStaff(staffId: string): Promise<Appointment[]> {
     const rows = await this.prisma.appointment.findMany({
