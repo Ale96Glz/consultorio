@@ -45,6 +45,14 @@ describe('Health (e2e)', () => {
       .expect(401);
   });
 
+  it('POST /scheduling/appointments/:id/confirm sin cookie', () => {
+    return request(app.getHttpServer())
+      .post(
+        '/scheduling/appointments/33333333-3333-4333-8333-333333333333/confirm',
+      )
+      .expect(401);
+  });
+
   afterEach(async () => {
     await app.close();
   });

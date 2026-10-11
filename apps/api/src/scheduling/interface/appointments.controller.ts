@@ -4,11 +4,18 @@ import {
   ConflictException,
   Controller,
   ForbiddenException,
+  HttpCode,
   NotFoundException,
+  Param,
+  ParseUUIDPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
+import {
+  AppointmentNotFoundError,
+  ConfirmAppointment,
+} from '../application/confirm-appointment';
 import {
   PatientUnavailableError,
   ScheduleAppointment,
@@ -16,6 +23,7 @@ import {
 } from '../application/schedule-appointment';
 import {
   AppointmentOverlapError,
+  AppointmentStatusError,
   type Appointment,
   type AppointmentStatus,
 } from '../domain/appointment';
@@ -34,7 +42,10 @@ type ScheduledAppointmentResponse = {
 @Controller('scheduling')
 @UseGuards(AuthGuard)
 export class AppointmentsController {
-  constructor(private readonly scheduleAppointment: ScheduleAppointment) {}
+  constructor(
+    private readonly scheduleAppointment: ScheduleAppointment,
+    private readonly confirmAppointment: ConfirmAppointment,
+  ) {}
 
   @Post('appointments')
   async schedule(
@@ -46,6 +57,22 @@ export class AppointmentsController {
         staffId: body.staffId,
         startsAt: new Date(body.startsAt),
         endsAt: new Date(body.endsAt),
+      });
+
+      return toResponse(appointment);
+    } catch (error) {
+      throw toHttpError(error);
+    }
+  }
+
+  @Post('appointments/:id/confirm')
+  @HttpCode(200)
+  async confirm(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ScheduledAppointmentResponse> {
+    try {
+      const appointment = await this.confirmAppointment.execute({
+        appointmentId: id,
       });
 
       return toResponse(appointment);
@@ -81,6 +108,14 @@ function toHttpError(error: unknown): Error {
 
   if (error instanceof InvalidDateRangeError) {
     return new BadRequestException(error.message);
+  }
+
+  if (error instanceof AppointmentNotFoundError) {
+    return new NotFoundException(error.message);
+  }
+
+  if (error instanceof AppointmentStatusError) {
+    return new ConflictException(error.message);
   }
 
   return error instanceof Error ? error : new Error('Error inesperado.');
