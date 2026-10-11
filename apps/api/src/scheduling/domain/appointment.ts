@@ -60,6 +60,16 @@ export class Appointment {
     return appointment;
   }
 
+  static rehydrate(input: ScheduleAppointment & { status: AppointmentStatus }): Appointment {
+    return new Appointment(
+      input.id,
+      input.patientId,
+      input.staffId,
+      DateRange.create(input.startsAt, input.endsAt),
+      input.status,
+    );
+  }
+
   get currentStatus(): AppointmentStatus {
     return this.status;
   }
