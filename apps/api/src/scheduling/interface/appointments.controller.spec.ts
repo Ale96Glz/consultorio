@@ -1,9 +1,13 @@
-import { INestApplication } from '@nestjs/common';
+import { type ExecutionContext, INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { configureHttp } from '../../configure-http';
+import {
+  CurrentStaff,
+  StaffUnassignedError,
+} from '../../identity/application/current-staff';
 import {
   AppointmentNotFoundError,
   ConfirmAppointment,
@@ -37,21 +41,35 @@ const body = {
 describe('AppointmentsController', () => {
   const schedule = jest.fn();
   const confirm = jest.fn();
+  const currentStaff = jest.fn();
   let app: INestApplication<App>;
 
   beforeEach(async () => {
     schedule.mockReset();
     confirm.mockReset();
+    currentStaff.mockReset();
+    currentStaff.mockResolvedValue({ id: 'staff-1', role: 'receptionist' });
 
     const module = await Test.createTestingModule({
       controllers: [AppointmentsController],
       providers: [
         { provide: ScheduleAppointment, useValue: { execute: schedule } },
         { provide: ConfirmAppointment, useValue: { execute: confirm } },
+        { provide: CurrentStaff, useValue: { execute: currentStaff } },
       ],
     })
       .overrideGuard(AuthGuard)
-      .useValue({ canActivate: () => true })
+      .useValue({
+        canActivate: (context: ExecutionContext) => {
+          const http = context
+            .switchToHttp()
+            .getRequest<{ session?: unknown }>();
+          http.session = {
+            user: { id: 'user-1', email: 'recepcion@consultorio.test' },
+          };
+          return true;
+        },
+      })
       .compile();
 
     app = module.createNestApplication();
@@ -82,6 +100,7 @@ describe('AppointmentsController', () => {
       .send(body)
       .expect(201);
 
+    expect(currentStaff).toHaveBeenCalledWith('user-1');
     expect(schedule).toHaveBeenCalledWith({
       patientId,
       staffId,
@@ -156,6 +175,21 @@ describe('AppointmentsController', () => {
       .send({ ...body, patientId: undefined })
       .expect(400);
 
+    expect(currentStaff).not.toHaveBeenCalled();
+    expect(schedule).not.toHaveBeenCalled();
+  });
+
+  it('responde 404 si quien agenda no es miembro de la clínica', async () => {
+    currentStaff.mockRejectedValue(new StaffUnassignedError());
+
+    const response = await request(app.getHttpServer())
+      .post('/scheduling/appointments')
+      .send(body)
+      .expect(404);
+
+    expect(response.body.message).toBe(
+      'Este usuario no es miembro de la clínica.',
+    );
     expect(schedule).not.toHaveBeenCalled();
   });
 
@@ -175,6 +209,7 @@ describe('AppointmentsController', () => {
       .post(`/scheduling/appointments/${appointmentId}/confirm`)
       .expect(200);
 
+    expect(currentStaff).toHaveBeenCalledWith('user-1');
     expect(confirm).toHaveBeenCalledWith({ appointmentId });
     expect(response.body).toEqual({
       id: appointmentId,
@@ -213,6 +248,20 @@ describe('AppointmentsController', () => {
       .post('/scheduling/appointments/no-es-uuid/confirm')
       .expect(400);
 
+    expect(currentStaff).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it('responde 404 si quien confirma no es miembro de la clínica', async () => {
+    currentStaff.mockRejectedValue(new StaffUnassignedError());
+
+    const response = await request(app.getHttpServer())
+      .post(`/scheduling/appointments/${appointmentId}/confirm`)
+      .expect(404);
+
+    expect(response.body.message).toBe(
+      'Este usuario no es miembro de la clínica.',
+    );
     expect(confirm).not.toHaveBeenCalled();
   });
 });

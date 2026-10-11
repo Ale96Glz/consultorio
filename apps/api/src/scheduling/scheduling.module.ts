@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { StaffAccessModule } from '../identity/staff-access.module';
 import { PrismaService } from '../infrastructure/prisma.service';
 import { AppointmentRepository } from './application/appointment-repository';
 import { ConfirmAppointment } from './application/confirm-appointment';
@@ -11,6 +12,7 @@ import { PrismaStaffLookup } from './infrastructure/prisma-staff.lookup';
 import { AppointmentsController } from './interface/appointments.controller';
 
 @Module({
+  imports: [StaffAccessModule],
   providers: [
     PrismaService,
     PrismaAppointmentRepository,

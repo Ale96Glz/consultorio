@@ -11,7 +11,12 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from '@thallesp/nestjs-better-auth';
+import { AuthGuard, Session } from '@thallesp/nestjs-better-auth';
+import type { UserSession } from '@thallesp/nestjs-better-auth';
+import {
+  CurrentStaff,
+  StaffUnassignedError,
+} from '../../identity/application/current-staff';
 import {
   AppointmentNotFoundError,
   ConfirmAppointment,
@@ -43,15 +48,18 @@ type ScheduledAppointmentResponse = {
 @UseGuards(AuthGuard)
 export class AppointmentsController {
   constructor(
+    private readonly currentStaff: CurrentStaff,
     private readonly scheduleAppointment: ScheduleAppointment,
     private readonly confirmAppointment: ConfirmAppointment,
   ) {}
 
   @Post('appointments')
   async schedule(
+    @Session() session: UserSession,
     @Body() body: ScheduleAppointmentDto,
   ): Promise<ScheduledAppointmentResponse> {
     try {
+      await this.currentStaff.execute(session.user.id);
       const appointment = await this.scheduleAppointment.execute({
         patientId: body.patientId,
         staffId: body.staffId,
@@ -68,9 +76,11 @@ export class AppointmentsController {
   @Post('appointments/:id/confirm')
   @HttpCode(200)
   async confirm(
+    @Session() session: UserSession,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ScheduledAppointmentResponse> {
     try {
+      await this.currentStaff.execute(session.user.id);
       const appointment = await this.confirmAppointment.execute({
         appointmentId: id,
       });
@@ -116,6 +126,10 @@ function toHttpError(error: unknown): Error {
 
   if (error instanceof AppointmentStatusError) {
     return new ConflictException(error.message);
+  }
+
+  if (error instanceof StaffUnassignedError) {
+    return new NotFoundException(error.message);
   }
 
   return error instanceof Error ? error : new Error('Error inesperado.');
