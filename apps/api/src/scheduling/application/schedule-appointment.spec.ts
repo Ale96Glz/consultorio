@@ -6,7 +6,11 @@ import {
   ScheduleAppointment,
   StaffCannotAttendError,
 } from './schedule-appointment';
-import { StaffLookup, type StaffRole, type StaffSnapshot } from './staff-lookup';
+import {
+  StaffLookup,
+  type StaffRole,
+  type StaffSnapshot,
+} from './staff-lookup';
 
 const patientId = 'patient-1';
 const doctorId = 'staff-doctor-1';
@@ -40,6 +44,14 @@ class InMemoryAppointments extends AppointmentRepository {
 
   constructor(private readonly existing: Appointment[] = []) {
     super();
+  }
+
+  async findById(id: string): Promise<Appointment | null> {
+    return (
+      this.saved.find((appointment) => appointment.id === id) ??
+      this.existing.find((appointment) => appointment.id === id) ??
+      null
+    );
   }
 
   async findOccupyingByStaff(staffId: string): Promise<Appointment[]> {

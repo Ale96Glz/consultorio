@@ -9,6 +9,25 @@ export class PrismaAppointmentRepository extends AppointmentRepository {
     super();
   }
 
+  async findById(id: string): Promise<Appointment | null> {
+    const row = await this.prisma.appointment.findUnique({
+      where: { id },
+    });
+
+    if (!row) {
+      return null;
+    }
+
+    return Appointment.rehydrate({
+      id: row.id,
+      patientId: row.patientId,
+      staffId: row.staffId,
+      startsAt: row.startsAt,
+      endsAt: row.endsAt,
+      status: row.status,
+    });
+  }
+
   async findOccupyingByStaff(staffId: string): Promise<Appointment[]> {
     const rows = await this.prisma.appointment.findMany({
       where: {
@@ -30,15 +49,18 @@ export class PrismaAppointmentRepository extends AppointmentRepository {
   }
 
   async save(appointment: Appointment): Promise<void> {
-    await this.prisma.appointment.create({
-      data: {
-        id: appointment.id,
-        patientId: appointment.patientId,
-        staffId: appointment.staffId,
-        startsAt: appointment.dateRange.startsAt,
-        endsAt: appointment.dateRange.endsAt,
-        status: appointment.currentStatus,
-      },
+    const data = {
+      patientId: appointment.patientId,
+      staffId: appointment.staffId,
+      startsAt: appointment.dateRange.startsAt,
+      endsAt: appointment.dateRange.endsAt,
+      status: appointment.currentStatus,
+    };
+
+    await this.prisma.appointment.upsert({
+      where: { id: appointment.id },
+      create: { id: appointment.id, ...data },
+      update: data,
     });
   }
 }
