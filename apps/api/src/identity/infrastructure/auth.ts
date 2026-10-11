@@ -23,6 +23,10 @@ const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: databaseUrl }),
 });
 
+export async function disconnectAuth(): Promise<void> {
+  await prisma.$disconnect();
+}
+
 export const auth = betterAuth({
   secret,
   baseURL,
