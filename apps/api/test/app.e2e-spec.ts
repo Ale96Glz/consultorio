@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { configureHttp } from './../src/configure-http';
 
 describe('Health (e2e)', () => {
   let app: INestApplication<App>;
@@ -13,6 +14,7 @@ describe('Health (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    configureHttp(app);
     await app.init();
   });
 
@@ -29,6 +31,18 @@ describe('Health (e2e)', () => {
 
   it('GET /identity/session sin cookie', () => {
     return request(app.getHttpServer()).get('/identity/session').expect(401);
+  });
+
+  it('POST /scheduling/appointments sin cookie', () => {
+    return request(app.getHttpServer())
+      .post('/scheduling/appointments')
+      .send({
+        patientId: '11111111-1111-4111-8111-111111111111',
+        staffId: '22222222-2222-4222-8222-222222222222',
+        startsAt: '2026-10-12T15:00:00.000Z',
+        endsAt: '2026-10-12T15:30:00.000Z',
+      })
+      .expect(401);
   });
 
   afterEach(async () => {

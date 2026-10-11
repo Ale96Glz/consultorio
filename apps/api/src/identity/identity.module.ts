@@ -8,6 +8,7 @@ import { SessionController } from './interface/session.controller';
     AuthModule.forRoot({
       auth,
       disableGlobalAuthGuard: true,
+      isGlobal: true,
     }),
   ],
   controllers: [SessionController],
