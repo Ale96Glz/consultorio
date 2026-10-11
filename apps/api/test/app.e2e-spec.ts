@@ -27,6 +27,10 @@ describe('Health (e2e)', () => {
     return request(app.getHttpServer()).get('/api/auth/ok').expect(200);
   });
 
+  it('GET /identity/session sin cookie', () => {
+    return request(app.getHttpServer()).get('/identity/session').expect(401);
+  });
+
   afterEach(async () => {
     await app.close();
   });
