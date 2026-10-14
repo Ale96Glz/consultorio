@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { PrismaService } from '../infrastructure/prisma.service';
 import { RegisterPatient } from './application/register-patient';
 import { ClinicalModule } from './clinical.module';
@@ -10,6 +11,8 @@ describe('ClinicalModule', () => {
     })
       .overrideProvider(PrismaService)
       .useValue({})
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     expect(module.get(RegisterPatient)).toBeInstanceOf(RegisterPatient);

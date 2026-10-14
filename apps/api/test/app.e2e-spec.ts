@@ -53,6 +53,27 @@ describe('Health (e2e)', () => {
       .expect(401);
   });
 
+  it('POST /clinical/patients sin cookie', () => {
+    return request(app.getHttpServer())
+      .post('/clinical/patients')
+      .send({
+        givenNames: 'Ana',
+        familyName: 'Ruiz',
+        documentId: 'CURP900412HDFRRL09',
+        phone: '5555550100',
+        birthDate: '1990-04-12',
+      })
+      .expect(401);
+  });
+
+  it('POST /scheduling/appointments/:id/cancel sin cookie', () => {
+    return request(app.getHttpServer())
+      .post(
+        '/scheduling/appointments/33333333-3333-4333-8333-333333333333/cancel',
+      )
+      .expect(401);
+  });
+
   afterEach(async () => {
     await app.close();
   });
