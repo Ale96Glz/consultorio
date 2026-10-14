@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { PrismaService } from '../infrastructure/prisma.service';
+import { CancelAppointment } from './application/cancel-appointment';
 import { ConfirmAppointment } from './application/confirm-appointment';
 import { ScheduleAppointment } from './application/schedule-appointment';
 import { SchedulingModule } from './scheduling.module';
@@ -18,5 +19,6 @@ describe('SchedulingModule', () => {
 
     expect(module.get(ScheduleAppointment)).toBeInstanceOf(ScheduleAppointment);
     expect(module.get(ConfirmAppointment)).toBeInstanceOf(ConfirmAppointment);
+    expect(module.get(CancelAppointment)).toBeInstanceOf(CancelAppointment);
   });
 });

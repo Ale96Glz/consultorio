@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { StaffAccessModule } from '../identity/staff-access.module';
 import { PrismaService } from '../infrastructure/prisma.service';
 import { AppointmentRepository } from './application/appointment-repository';
+import { CancelAppointment } from './application/cancel-appointment';
 import { ConfirmAppointment } from './application/confirm-appointment';
 import { PatientLookup } from './application/patient-lookup';
 import { ScheduleAppointment } from './application/schedule-appointment';
@@ -26,8 +27,9 @@ import { AppointmentsController } from './interface/appointments.controller';
     { provide: StaffLookup, useExisting: PrismaStaffLookup },
     ScheduleAppointment,
     ConfirmAppointment,
+    CancelAppointment,
   ],
   controllers: [AppointmentsController],
-  exports: [ScheduleAppointment, ConfirmAppointment],
+  exports: [ScheduleAppointment, ConfirmAppointment, CancelAppointment],
 })
 export class SchedulingModule {}
