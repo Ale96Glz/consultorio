@@ -31,6 +31,10 @@ class InMemoryPatients extends PatientRepository {
     super();
   }
 
+  async findById(id: string): Promise<Patient | null> {
+    return this.existing.find((item) => item.id === id) ?? null;
+  }
+
   async findActiveByDocument(value: string): Promise<Patient[]> {
     return this.existing.filter(
       (item) => item.isActive() && item.documentId.value === value,
