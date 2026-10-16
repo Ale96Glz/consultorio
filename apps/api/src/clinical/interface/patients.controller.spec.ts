@@ -8,12 +8,17 @@ import {
   CurrentStaff,
   StaffUnassignedError,
 } from '../../identity/application/current-staff';
+import {
+  DeactivatePatient,
+  PatientNotFoundError,
+} from '../application/deactivate-patient';
 import { RegisterPatient } from '../application/register-patient';
 import { InvalidDocumentIdError } from '../domain/document-id';
 import { DuplicateDocumentIdError, Patient } from '../domain/patient';
 import { PatientsController } from './patients.controller';
 
 const birthDate = new Date('1990-04-12');
+const patientId = '44444444-4444-4444-8444-444444444444';
 
 const body = {
   givenNames: 'Ana',
@@ -25,11 +30,13 @@ const body = {
 
 describe('PatientsController', () => {
   const register = jest.fn();
+  const deactivate = jest.fn();
   const currentStaff = jest.fn();
   let app: INestApplication<App>;
 
   beforeEach(async () => {
     register.mockReset();
+    deactivate.mockReset();
     currentStaff.mockReset();
     currentStaff.mockResolvedValue({ id: 'staff-1', role: 'receptionist' });
 
@@ -37,6 +44,7 @@ describe('PatientsController', () => {
       controllers: [PatientsController],
       providers: [
         { provide: RegisterPatient, useValue: { execute: register } },
+        { provide: DeactivatePatient, useValue: { execute: deactivate } },
         { provide: CurrentStaff, useValue: { execute: currentStaff } },
       ],
     })
@@ -149,5 +157,70 @@ describe('PatientsController', () => {
       'Este usuario no es miembro de la clínica.',
     );
     expect(register).not.toHaveBeenCalled();
+  });
+
+  it('da de baja la ficha y responde 200', async () => {
+    const removed = Patient.register(
+      {
+        id: patientId,
+        givenNames: 'Ana',
+        familyName: 'Ruiz',
+        documentId: body.documentId,
+        phone: body.phone,
+        birthDate,
+      },
+      [],
+    );
+    const removedAt = new Date('2026-10-01T00:00:00.000Z');
+    removed.deactivate(removedAt);
+    deactivate.mockResolvedValue(removed);
+
+    const response = await request(app.getHttpServer())
+      .post(`/clinical/patients/${patientId}/deactivate`)
+      .expect(200);
+
+    expect(currentStaff).toHaveBeenCalledWith('user-1');
+    expect(deactivate).toHaveBeenCalledWith({ patientId });
+    expect(response.body).toEqual({
+      id: patientId,
+      givenNames: 'Ana',
+      familyName: 'Ruiz',
+      documentId: 'CURP900412HDFRRL09',
+      phone: '5555550100',
+      birthDate: '1990-04-12',
+      deletedAt: removedAt.toISOString(),
+    });
+  });
+
+  it('responde 404 si la ficha no existe', async () => {
+    deactivate.mockRejectedValue(new PatientNotFoundError());
+
+    const response = await request(app.getHttpServer())
+      .post(`/clinical/patients/${patientId}/deactivate`)
+      .expect(404);
+
+    expect(response.body.message).toBe('La ficha no existe.');
+  });
+
+  it('responde 400 si el id de la ficha no es un UUID', async () => {
+    await request(app.getHttpServer())
+      .post('/clinical/patients/no-es-uuid/deactivate')
+      .expect(400);
+
+    expect(currentStaff).not.toHaveBeenCalled();
+    expect(deactivate).not.toHaveBeenCalled();
+  });
+
+  it('responde 404 si quien da de baja no es miembro de la clínica', async () => {
+    currentStaff.mockRejectedValue(new StaffUnassignedError());
+
+    const response = await request(app.getHttpServer())
+      .post(`/clinical/patients/${patientId}/deactivate`)
+      .expect(404);
+
+    expect(response.body.message).toBe(
+      'Este usuario no es miembro de la clínica.',
+    );
+    expect(deactivate).not.toHaveBeenCalled();
   });
 });

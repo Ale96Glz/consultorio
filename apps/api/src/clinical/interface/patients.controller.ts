@@ -3,7 +3,10 @@ import {
   Body,
   ConflictException,
   Controller,
+  HttpCode,
   NotFoundException,
+  Param,
+  ParseUUIDPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -13,6 +16,10 @@ import {
   CurrentStaff,
   StaffUnassignedError,
 } from '../../identity/application/current-staff';
+import {
+  DeactivatePatient,
+  PatientNotFoundError,
+} from '../application/deactivate-patient';
 import { RegisterPatient } from '../application/register-patient';
 import { InvalidDocumentIdError } from '../domain/document-id';
 import { DuplicateDocumentIdError, type Patient } from '../domain/patient';
@@ -27,12 +34,17 @@ type RegisteredPatientResponse = {
   birthDate: string;
 };
 
+type DeactivatedPatientResponse = RegisteredPatientResponse & {
+  deletedAt: string;
+};
+
 @Controller('clinical')
 @UseGuards(AuthGuard)
 export class PatientsController {
   constructor(
     private readonly currentStaff: CurrentStaff,
     private readonly registerPatient: RegisterPatient,
+    private readonly deactivatePatient: DeactivatePatient,
   ) {}
 
   @Post('patients')
@@ -55,6 +67,21 @@ export class PatientsController {
       throw toHttpError(error);
     }
   }
+
+  @Post('patients/:id/deactivate')
+  @HttpCode(200)
+  async deactivate(
+    @Session() session: UserSession,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<DeactivatedPatientResponse> {
+    try {
+      await this.currentStaff.execute(session.user.id);
+      const patient = await this.deactivatePatient.execute({ patientId: id });
+      return toDeactivatedResponse(patient);
+    } catch (error) {
+      throw toHttpError(error);
+    }
+  }
 }
 
 function toResponse(patient: Patient): RegisteredPatientResponse {
@@ -68,6 +95,17 @@ function toResponse(patient: Patient): RegisteredPatientResponse {
   };
 }
 
+function toDeactivatedResponse(patient: Patient): DeactivatedPatientResponse {
+  if (!patient.deletedAt) {
+    throw new Error('La ficha no quedó dada de baja.');
+  }
+
+  return {
+    ...toResponse(patient),
+    deletedAt: patient.deletedAt.toISOString(),
+  };
+}
+
 function toHttpError(error: unknown): Error {
   if (error instanceof DuplicateDocumentIdError) {
     return new ConflictException(error.message);
@@ -75,6 +113,10 @@ function toHttpError(error: unknown): Error {
 
   if (error instanceof InvalidDocumentIdError) {
     return new BadRequestException(error.message);
+  }
+
+  if (error instanceof PatientNotFoundError) {
+    return new NotFoundException(error.message);
   }
 
   if (error instanceof StaffUnassignedError) {

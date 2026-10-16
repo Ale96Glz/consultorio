@@ -66,6 +66,14 @@ describe('Health (e2e)', () => {
       .expect(401);
   });
 
+  it('POST /clinical/patients/:id/deactivate sin cookie', () => {
+    return request(app.getHttpServer())
+      .post(
+        '/clinical/patients/44444444-4444-4444-8444-444444444444/deactivate',
+      )
+      .expect(401);
+  });
+
   it('POST /scheduling/appointments/:id/cancel sin cookie', () => {
     return request(app.getHttpServer())
       .post(

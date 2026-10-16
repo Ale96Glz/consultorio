@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { PrismaService } from '../infrastructure/prisma.service';
+import { DeactivatePatient } from './application/deactivate-patient';
 import { RegisterPatient } from './application/register-patient';
 import { ClinicalModule } from './clinical.module';
 
@@ -16,5 +17,6 @@ describe('ClinicalModule', () => {
       .compile();
 
     expect(module.get(RegisterPatient)).toBeInstanceOf(RegisterPatient);
+    expect(module.get(DeactivatePatient)).toBeInstanceOf(DeactivatePatient);
   });
 });
