@@ -7,6 +7,7 @@ import { ConfirmAppointment } from './application/confirm-appointment';
 import { PatientLookup } from './application/patient-lookup';
 import { ScheduleAppointment } from './application/schedule-appointment';
 import { StaffLookup } from './application/staff-lookup';
+import { ViewAgenda } from './application/view-agenda';
 import { PrismaAppointmentRepository } from './infrastructure/prisma-appointment.repository';
 import { PrismaPatientLookup } from './infrastructure/prisma-patient.lookup';
 import { PrismaStaffLookup } from './infrastructure/prisma-staff.lookup';
@@ -28,8 +29,14 @@ import { AppointmentsController } from './interface/appointments.controller';
     ScheduleAppointment,
     ConfirmAppointment,
     CancelAppointment,
+    ViewAgenda,
   ],
   controllers: [AppointmentsController],
-  exports: [ScheduleAppointment, ConfirmAppointment, CancelAppointment],
+  exports: [
+    ScheduleAppointment,
+    ConfirmAppointment,
+    CancelAppointment,
+    ViewAgenda,
+  ],
 })
 export class SchedulingModule {}
