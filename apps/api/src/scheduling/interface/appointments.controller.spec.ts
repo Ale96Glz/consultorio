@@ -8,6 +8,7 @@ import {
   CurrentStaff,
   StaffUnassignedError,
 } from '../../identity/application/current-staff';
+import { CancelAppointment } from '../application/cancel-appointment';
 import {
   AppointmentNotFoundError,
   ConfirmAppointment,
@@ -41,12 +42,14 @@ const body = {
 describe('AppointmentsController', () => {
   const schedule = jest.fn();
   const confirm = jest.fn();
+  const cancel = jest.fn();
   const currentStaff = jest.fn();
   let app: INestApplication<App>;
 
   beforeEach(async () => {
     schedule.mockReset();
     confirm.mockReset();
+    cancel.mockReset();
     currentStaff.mockReset();
     currentStaff.mockResolvedValue({ id: 'staff-1', role: 'receptionist' });
 
@@ -55,6 +58,7 @@ describe('AppointmentsController', () => {
       providers: [
         { provide: ScheduleAppointment, useValue: { execute: schedule } },
         { provide: ConfirmAppointment, useValue: { execute: confirm } },
+        { provide: CancelAppointment, useValue: { execute: cancel } },
         { provide: CurrentStaff, useValue: { execute: currentStaff } },
       ],
     })
@@ -263,5 +267,65 @@ describe('AppointmentsController', () => {
       'Este usuario no es miembro de la clínica.',
     );
     expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it('cancela la cita y responde 200', async () => {
+    cancel.mockResolvedValue(
+      Appointment.rehydrate({
+        id: appointmentId,
+        patientId,
+        staffId,
+        startsAt,
+        endsAt,
+        status: 'cancelada',
+      }),
+    );
+
+    const response = await request(app.getHttpServer())
+      .post(`/scheduling/appointments/${appointmentId}/cancel`)
+      .expect(200);
+
+    expect(currentStaff).toHaveBeenCalledWith('user-1');
+    expect(cancel).toHaveBeenCalledWith({ appointmentId });
+    expect(response.body).toEqual({
+      id: appointmentId,
+      patientId,
+      staffId,
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+      status: 'cancelada',
+    });
+  });
+
+  it('responde 404 si la cita a cancelar no existe', async () => {
+    cancel.mockRejectedValue(new AppointmentNotFoundError());
+
+    const response = await request(app.getHttpServer())
+      .post(`/scheduling/appointments/${appointmentId}/cancel`)
+      .expect(404);
+
+    expect(response.body.message).toBe('La cita no existe.');
+  });
+
+  it('responde 400 si el id a cancelar no es un UUID', async () => {
+    await request(app.getHttpServer())
+      .post('/scheduling/appointments/no-es-uuid/cancel')
+      .expect(400);
+
+    expect(currentStaff).not.toHaveBeenCalled();
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it('responde 404 si quien cancela no es miembro de la clínica', async () => {
+    currentStaff.mockRejectedValue(new StaffUnassignedError());
+
+    const response = await request(app.getHttpServer())
+      .post(`/scheduling/appointments/${appointmentId}/cancel`)
+      .expect(404);
+
+    expect(response.body.message).toBe(
+      'Este usuario no es miembro de la clínica.',
+    );
+    expect(cancel).not.toHaveBeenCalled();
   });
 });

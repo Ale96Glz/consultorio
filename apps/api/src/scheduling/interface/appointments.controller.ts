@@ -17,6 +17,7 @@ import {
   CurrentStaff,
   StaffUnassignedError,
 } from '../../identity/application/current-staff';
+import { CancelAppointment } from '../application/cancel-appointment';
 import {
   AppointmentNotFoundError,
   ConfirmAppointment,
@@ -51,6 +52,7 @@ export class AppointmentsController {
     private readonly currentStaff: CurrentStaff,
     private readonly scheduleAppointment: ScheduleAppointment,
     private readonly confirmAppointment: ConfirmAppointment,
+    private readonly cancelAppointment: CancelAppointment,
   ) {}
 
   @Post('appointments')
@@ -82,6 +84,24 @@ export class AppointmentsController {
     try {
       await this.currentStaff.execute(session.user.id);
       const appointment = await this.confirmAppointment.execute({
+        appointmentId: id,
+      });
+
+      return toResponse(appointment);
+    } catch (error) {
+      throw toHttpError(error);
+    }
+  }
+
+  @Post('appointments/:id/cancel')
+  @HttpCode(200)
+  async cancel(
+    @Session() session: UserSession,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ScheduledAppointmentResponse> {
+    try {
+      await this.currentStaff.execute(session.user.id);
+      const appointment = await this.cancelAppointment.execute({
         appointmentId: id,
       });
 
