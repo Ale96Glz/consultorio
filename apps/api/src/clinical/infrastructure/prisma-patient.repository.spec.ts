@@ -7,16 +7,16 @@ const birthDate = new Date('1990-04-12');
 describe('PrismaPatientRepository', () => {
   const findUnique = jest.fn();
   const findMany = jest.fn();
-  const create = jest.fn();
+  const upsert = jest.fn();
   const prisma = {
-    patient: { findUnique, findMany, create },
+    patient: { findUnique, findMany, upsert },
   } as unknown as PrismaService;
   const repository = new PrismaPatientRepository(prisma);
 
   beforeEach(() => {
     findUnique.mockReset();
     findMany.mockReset();
-    create.mockReset();
+    upsert.mockReset();
   });
 
   it('reconstruye la ficha pedida', async () => {
@@ -87,12 +87,13 @@ describe('PrismaPatientRepository', () => {
       },
       [],
     );
-    create.mockResolvedValue({});
+    upsert.mockResolvedValue({});
 
     await repository.save(patient);
 
-    expect(create).toHaveBeenCalledWith({
-      data: {
+    expect(upsert).toHaveBeenCalledWith({
+      where: { id: 'patient-2' },
+      create: {
         id: 'patient-2',
         givenNames: 'Ana',
         familyName: 'Ruiz',
@@ -101,6 +102,42 @@ describe('PrismaPatientRepository', () => {
         birthDate,
         deletedAt: null,
       },
+      update: {
+        givenNames: 'Ana',
+        familyName: 'Ruiz',
+        documentId: 'CURP900412HDFRRL09',
+        phone: '5555550100',
+        birthDate,
+        deletedAt: null,
+      },
+    });
+  });
+
+  it('actualiza la baja de una ficha existente', async () => {
+    const patient = Patient.register(
+      {
+        id: 'patient-2',
+        givenNames: 'Ana',
+        familyName: 'Ruiz',
+        documentId: 'CURP900412HDFRRL09',
+        phone: '5555550100',
+        birthDate,
+      },
+      [],
+    );
+    const removedAt = new Date('2026-10-01T00:00:00.000Z');
+    patient.deactivate(removedAt);
+    upsert.mockResolvedValue({});
+
+    await repository.save(patient);
+
+    expect(upsert).toHaveBeenCalledWith({
+      where: { id: 'patient-2' },
+      create: expect.objectContaining({
+        id: 'patient-2',
+        deletedAt: removedAt,
+      }),
+      update: expect.objectContaining({ deletedAt: removedAt }),
     });
   });
 });

@@ -27,16 +27,19 @@ export class PrismaPatientRepository extends PatientRepository {
   }
 
   async save(patient: Patient): Promise<void> {
-    await this.prisma.patient.create({
-      data: {
-        id: patient.id,
-        givenNames: patient.givenNames,
-        familyName: patient.familyName,
-        documentId: patient.documentId.value,
-        phone: patient.phone,
-        birthDate: patient.birthDate,
-        deletedAt: patient.deletedAt,
-      },
+    const data = {
+      givenNames: patient.givenNames,
+      familyName: patient.familyName,
+      documentId: patient.documentId.value,
+      phone: patient.phone,
+      birthDate: patient.birthDate,
+      deletedAt: patient.deletedAt,
+    };
+
+    await this.prisma.patient.upsert({
+      where: { id: patient.id },
+      create: { id: patient.id, ...data },
+      update: data,
     });
   }
 }
