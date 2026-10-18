@@ -74,6 +74,12 @@ describe('Health (e2e)', () => {
       .expect(401);
   });
 
+  it('GET /scheduling/agenda/:staffId sin cookie', () => {
+    return request(app.getHttpServer())
+      .get('/scheduling/agenda/22222222-2222-4222-8222-222222222222')
+      .expect(401);
+  });
+
   it('POST /scheduling/appointments/:id/cancel sin cookie', () => {
     return request(app.getHttpServer())
       .post(

@@ -23,6 +23,7 @@ import {
   AppointmentOverlapError,
   AppointmentStatusError,
 } from '../domain/appointment';
+import { ViewAgenda } from '../application/view-agenda';
 import { InvalidDateRangeError } from '../domain/date-range';
 import { AppointmentsController } from './appointments.controller';
 
@@ -43,6 +44,7 @@ describe('AppointmentsController', () => {
   const schedule = jest.fn();
   const confirm = jest.fn();
   const cancel = jest.fn();
+  const agenda = jest.fn();
   const currentStaff = jest.fn();
   let app: INestApplication<App>;
 
@@ -50,6 +52,7 @@ describe('AppointmentsController', () => {
     schedule.mockReset();
     confirm.mockReset();
     cancel.mockReset();
+    agenda.mockReset();
     currentStaff.mockReset();
     currentStaff.mockResolvedValue({ id: 'staff-1', role: 'receptionist' });
 
@@ -59,6 +62,7 @@ describe('AppointmentsController', () => {
         { provide: ScheduleAppointment, useValue: { execute: schedule } },
         { provide: ConfirmAppointment, useValue: { execute: confirm } },
         { provide: CancelAppointment, useValue: { execute: cancel } },
+        { provide: ViewAgenda, useValue: { execute: agenda } },
         { provide: CurrentStaff, useValue: { execute: currentStaff } },
       ],
     })
@@ -327,5 +331,69 @@ describe('AppointmentsController', () => {
       'Este usuario no es miembro de la clínica.',
     );
     expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it('devuelve la agenda del doctor y responde 200', async () => {
+    agenda.mockResolvedValue([
+      Appointment.rehydrate({
+        id: appointmentId,
+        patientId,
+        staffId,
+        startsAt,
+        endsAt,
+        status: 'pendiente',
+      }),
+    ]);
+
+    const response = await request(app.getHttpServer())
+      .get(`/scheduling/agenda/${staffId}`)
+      .expect(200);
+
+    expect(currentStaff).toHaveBeenCalledWith('user-1');
+    expect(agenda).toHaveBeenCalledWith({ staffId });
+    expect(response.body).toEqual([
+      {
+        id: appointmentId,
+        patientId,
+        staffId,
+        startsAt: startsAt.toISOString(),
+        endsAt: endsAt.toISOString(),
+        status: 'pendiente',
+      },
+    ]);
+  });
+
+  it('responde 403 si la agenda no es de un doctor', async () => {
+    agenda.mockRejectedValue(new StaffCannotAttendError());
+
+    const response = await request(app.getHttpServer())
+      .get(`/scheduling/agenda/${staffId}`)
+      .expect(403);
+
+    expect(response.body.message).toBe(
+      'Solo un doctor puede atender una cita.',
+    );
+  });
+
+  it('responde 400 si el id del doctor no es un UUID', async () => {
+    await request(app.getHttpServer())
+      .get('/scheduling/agenda/no-es-uuid')
+      .expect(400);
+
+    expect(currentStaff).not.toHaveBeenCalled();
+    expect(agenda).not.toHaveBeenCalled();
+  });
+
+  it('responde 404 si quien consulta la agenda no es miembro de la clínica', async () => {
+    currentStaff.mockRejectedValue(new StaffUnassignedError());
+
+    const response = await request(app.getHttpServer())
+      .get(`/scheduling/agenda/${staffId}`)
+      .expect(404);
+
+    expect(response.body.message).toBe(
+      'Este usuario no es miembro de la clínica.',
+    );
+    expect(agenda).not.toHaveBeenCalled();
   });
 });

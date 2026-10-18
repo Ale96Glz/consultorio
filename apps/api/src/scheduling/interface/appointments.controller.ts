@@ -4,6 +4,7 @@ import {
   ConflictException,
   Controller,
   ForbiddenException,
+  Get,
   HttpCode,
   NotFoundException,
   Param,
@@ -33,6 +34,7 @@ import {
   type Appointment,
   type AppointmentStatus,
 } from '../domain/appointment';
+import { ViewAgenda } from '../application/view-agenda';
 import { InvalidDateRangeError } from '../domain/date-range';
 import { ScheduleAppointmentDto } from './schedule-appointment.dto';
 
@@ -53,6 +55,7 @@ export class AppointmentsController {
     private readonly scheduleAppointment: ScheduleAppointment,
     private readonly confirmAppointment: ConfirmAppointment,
     private readonly cancelAppointment: CancelAppointment,
+    private readonly viewAgenda: ViewAgenda,
   ) {}
 
   @Post('appointments')
@@ -106,6 +109,20 @@ export class AppointmentsController {
       });
 
       return toResponse(appointment);
+    } catch (error) {
+      throw toHttpError(error);
+    }
+  }
+
+  @Get('agenda/:staffId')
+  async agenda(
+    @Session() session: UserSession,
+    @Param('staffId', ParseUUIDPipe) staffId: string,
+  ): Promise<ScheduledAppointmentResponse[]> {
+    try {
+      await this.currentStaff.execute(session.user.id);
+      const appointments = await this.viewAgenda.execute({ staffId });
+      return appointments.map((appointment) => toResponse(appointment));
     } catch (error) {
       throw toHttpError(error);
     }
